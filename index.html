@@ -199,7 +199,7 @@
       position: fixed; bottom: 1.5rem; right: 1.5rem;
       background: #2d2d2d; color: white;
       padding: 0.75rem 1.2rem; border-radius: 0.6rem;
-      font-size: 0.88rem; x-index: 9999;
+      font-size: 0.88rem; z-index: 9999;
       box-shadow: var(--shadow-lg);
       transform: translateY(100px); opacity: 0;
       transition: all 0.3s;
@@ -425,19 +425,19 @@
 
   // ══════════════════════════════════════════════
 
-  let supabase, recipes = [], currentFilter = 'Alle', editingId = null;
+  let sbClient, recipes = [], currentFilter = 'Alle', editingId = null;
 
   // ── Init ──
   function init() {
     if (SUPABASE_URL.includes('DEINE') || SUPABASE_ANON_KEY.includes('DEIN_')) {
       document.getElementById('configBanner').classList.remove('hidden');
     }
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     checkSession();
   }
 
   async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sbClient.auth.getSession();
     if (session) showApp(session.user);
     else showLogin();
   }
@@ -465,7 +465,7 @@
     btn.disabled = true; btn.textContent = 'Einloggen…';
     errEl.style.display = 'none';
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await sbClient.auth.signInWithPassword({
       email: 'zugang@robins-kochbuch.app',
       password
     });
@@ -483,7 +483,7 @@
   }
 
   async function doLogout() {
-    await supabase.auth.signOut();
+    await sbClient.auth.signOut();
     showLogin();
     recipes = [];
   }
@@ -496,7 +496,7 @@
   // ── Data ──
   async function loadRecipes() {
     document.getElementById('grid').innerHTML = '<div class="loading">⏳ Lade Rezepte…</div>';
-    const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: true });
+    const { data, error } = await sbClient.from('recipes').select('*').order('created_at', { ascending: true });
     if (error) { showToast('Fehler beim Laden: ' + error.message, 'error'); return; }
     recipes = data || [];
     renderCards();
@@ -528,7 +528,7 @@
 
     document.getElementById('grid').innerHTML = filtered.map(r => `
       <div class="card">
-        <div class="card-emoji">${r.emoji || '🍽️'}|/div>
+        <div class="card-emoji">${r.emoji || '🍽️'}</div>
         <div class="card-body">
           <div class="card-name">${esc(r.name)}</div>
           <div class="card-meta">
@@ -571,7 +571,7 @@
         ${nutr ? `<div class="dsec"><h3>Nährwerte pro Portion</h3><div class="nutr-grid">
           ${r.kcal ? `<div class="nutr-item"><div class="val">${r.kcal}</div><div class="lbl">kcal</div></div>` : ''}
           ${r.protein ? `<div class="nutr-item"><div class="val">${r.protein}g</div><div class="lbl">Protein</div></div>` : ''}
-          ${r.carbs ? `<div class="nutr-item"><div class="val">${r.carbs}g</div><div class="lbl">Kojlenhydrate</div></div>` : ''}
+          ${r.carbs ? `<div class="nutr-item"><div class="val">${r.carbs}g</div><div class="lbl">Kohlenhydrate</div></div>` : ''}
           ${r.fat ? `<div class="nutr-item"><div class="val">${r.fat}g</div><div class="lbl">Fett</div></div>` : ''}
         </div></div>` : ''}
         ${r.source_url ? `<div class="dsrc">Quelle: <a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.source_label || r.source_url)}</a></div>` : ''}
@@ -643,9 +643,9 @@
 
     let error;
     if (editingId) {
-      ({ error } = await supabase.from('recipes').update(payload).eq('id', editingId));
+      ({ error } = await sbClient.from('recipes').update(payload).eq('id', editingId));
     } else {
-      ({ error } = await supabase.from('recipes').insert([payload]));
+      ({ error } = await sbClient.from('recipes').insert([payload]));
     }
 
     btn.disabled = false; btn.textContent = '💾 Speichern';
@@ -659,7 +659,7 @@
   async function deleteRecipe(id, e) {
     e.stopPropagation();
     if (!confirm('Gericht wirklich löschen?')) return;
-    const { error } = await supabase.from('recipes').delete().eq('id', id);
+    const { error } = await sbClient.from('recipes').delete().eq('id', id);
     if (error) { showToast('Fehler: ' + error.message, 'error'); return; }
     showToast('Gericht gelöscht', 'success');
     loadRecipes();
