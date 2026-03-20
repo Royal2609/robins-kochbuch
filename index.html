@@ -529,9 +529,9 @@
 
     document.getElementById('grid').innerHTML = filtered.map(r => `
       <div class="card">
-        <div class="card-emoji">${r.emoji || '🍽️'}</div>
+        ${r.image_url ? `<img src="${r.image_url}" class="recipe-card-img" alt="${r.name}">` : `<div class="card-emoji">${r.emoji || '🍽️'}</div>`}
         <div class="card-body">
-          <div class="card        ${r.image_url ? `<img src="${r.image_url}" class="recipe-card-img" alt="${r.name}">` : `<div class="card-emoji">${r.emoji || '🍽️'}</div>`}ta">
+          <div class="card-meta">
             <span class="badge b-cat">${esc(r.category || '')}</span>
             ${r.time_minutes ? `<span class="badge b-time">⏱ ${esc(r.time_minutes)}</span>` : ''}
             ${r.kcal ? `<span class="badge b-kcal">🔥 ${r.kcal} kcal</span>` : ''}
