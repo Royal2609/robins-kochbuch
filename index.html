@@ -162,6 +162,7 @@
     }
     .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
     .card-emoji { font-size: 3.5rem; text-align: center; padding: 1.25rem; background: linear-gradient(135deg, #fdf3ee, #fde8df); }
+    .recipe-card-img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px 8px 0 0; display: block; }
     .card-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; }
     .card-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.3; }
     .card-meta { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
@@ -530,8 +531,7 @@
       <div class="card">
         <div class="card-emoji">${r.emoji || '🍽️'}</div>
         <div class="card-body">
-          <div class="card-name">${esc(r.name)}</div>
-          <div class="card-meta">
+          <div class="card        ${r.image_url ? `<img src="${r.image_url}" class="recipe-card-img" alt="${r.name}">` : `<div class="card-emoji">${r.emoji || '🍽️'}</div>`}ta">
             <span class="badge b-cat">${esc(r.category || '')}</span>
             ${r.time_minutes ? `<span class="badge b-time">⏱ ${esc(r.time_minutes)}</span>` : ''}
             ${r.kcal ? `<span class="badge b-kcal">🔥 ${r.kcal} kcal</span>` : ''}
