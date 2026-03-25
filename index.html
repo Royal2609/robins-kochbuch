@@ -114,9 +114,9 @@
     /* Toolbar */
     .toolbar {
       background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 1rem 1.75rem; display: flex; gap: 0.75rem;
-      align-items: center; flex-wrap: wrap;
+      padding: 0.85rem 1.75rem; display: flex; flex-direction: column; gap: 0.6rem;
     }
+    .toolbar-row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
     .search-wrap { flex: 1; min-width: 180px; position: relative; }
     .search-wrap::before {
       content: ''; position: absolute; left: 0.9rem; top: 50%;
@@ -208,6 +208,25 @@
     .b-time { background: #e8f0f8; color: #3a6898; }
     .b-kcal { background: #edf7f0; color: #2e7d51; }
     .b-prot { background: #fef5ea; color: #b56a1a; }
+
+    /* Tag chips */
+    .tag-chip {
+      font-size: 0.65rem; padding: 0.15rem 0.5rem;
+      border-radius: 1rem; font-weight: 600;
+      background: var(--surface-warm); color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .tag-chip.t-herzhaft  { background: #fef0e8; color: #a04820; border-color: #f0c8a8; }
+    .tag-chip.t-süß       { background: #fef5fb; color: #9a3a7a; border-color: #e8b8d8; }
+    .tag-chip.t-vegetarisch { background: #edf8f0; color: #2a6e44; border-color: #a8dbb8; }
+    .tag-chip.t-vegan     { background: #e8f8ec; color: #1e6e38; border-color: #90d8a8; }
+    .tag-chip.t-highprotein { background: #fef5e8; color: #9a5c18; border-color: #f0cc90; }
+    .tag-chip.t-fitness   { background: #eef0fc; color: #3a4aaa; border-color: #b0b8f0; }
+    .tag-chip.t-schnell   { background: #fffbe8; color: #8a6a10; border-color: #e8d888; }
+    .tag-chip.t-meal-prep { background: #f0eef8; color: #5a4a9a; border-color: #c0b0e8; }
+    .tag-chip.t-scharf    { background: #fff0f0; color: #b43030; border-color: #f0a8a8; }
+
+    .card-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
     .card-desc {
       font-size: 0.84rem; color: var(--muted); line-height: 1.55;
       flex: 1; margin-bottom: 0.75rem;
@@ -410,6 +429,19 @@
       padding: 0.9rem 1.5rem; border-top: 1px solid var(--border);
       display: flex; justify-content: flex-end; gap: 0.75rem;
     }
+
+    /* Tag checkboxes in form */
+    .tag-check {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.3rem 0.7rem; border-radius: 2rem; cursor: pointer;
+      font-size: 0.8rem; font-weight: 500;
+      border: 1.5px solid var(--border); background: var(--surface-warm);
+      color: var(--muted); transition: all 0.15s; user-select: none;
+    }
+    .tag-check input { display: none; }
+    .tag-check:has(input:checked) {
+      background: var(--brand); border-color: var(--brand); color: white;
+    }
   </style>
 </head>
 <body>
@@ -443,22 +475,36 @@
   </header>
 
   <div class="toolbar">
-    <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="Gericht suchen…" oninput="renderCards()">
+    <div class="toolbar-row">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Gericht suchen…" oninput="renderCards()">
+      </div>
+      <button class="btn-add" onclick="openAdd()">+ Rezept</button>
     </div>
-    <div class="tags" id="filterTags">
-      <button class="tag active" onclick="setFilter('Alle', this)">Alle</button>
-      <button class="tag" onclick="setFilter('Salat', this)">🥗 Salat</button>
-      <button class="tag" onclick="setFilter('Pasta', this)">🍝 Pasta</button>
-      <button class="tag" onclick="setFilter('Fleisch', this)">🥩 Fleisch</button>
-      <button class="tag" onclick="setFilter('Vegetarisch', this)">🥦 Vegetarisch</button>
-      <button class="tag" onclick="setFilter('Vegan', this)">🌱 Vegan</button>
-      <button class="tag" onclick="setFilter('Frühstück', this)">🌅 Frühstück</button>
-      <button class="tag" onclick="setFilter('Suppe', this)">🍲 Suppe</button>
-      <button class="tag" onclick="setFilter('Snack', this)">🥨 Snack</button>
-      <button class="tag" onclick="setFilter('Dessert', this)">🍰 Dessert</button>
+    <div class="toolbar-row">
+      <div class="tags" id="filterCats">
+        <button class="tag active" onclick="setCatFilter('Alle', this)">Alle</button>
+        <button class="tag" onclick="setCatFilter('Gericht', this)">🍽️ Gericht</button>
+        <button class="tag" onclick="setCatFilter('Salat', this)">🥗 Salat</button>
+        <button class="tag" onclick="setCatFilter('Wrap & Bowl', this)">🥙 Wrap & Bowl</button>
+        <button class="tag" onclick="setCatFilter('Beilage', this)">🍞 Beilage</button>
+        <button class="tag" onclick="setCatFilter('Sauce & Dip', this)">🥫 Sauce & Dip</button>
+        <button class="tag" onclick="setCatFilter('Suppe', this)">🍲 Suppe</button>
+      </div>
     </div>
-    <button class="btn-add" onclick="openAdd()">+ Rezept</button>
+    <div class="toolbar-row">
+      <div class="tags" id="filterTags">
+        <button class="tag" onclick="setTagFilter('Herzhaft', this)">🥩 Herzhaft</button>
+        <button class="tag" onclick="setTagFilter('Süß', this)">🍰 Süß</button>
+        <button class="tag" onclick="setTagFilter('Vegetarisch', this)">🥦 Vegetarisch</button>
+        <button class="tag" onclick="setTagFilter('Vegan', this)">🌱 Vegan</button>
+        <button class="tag" onclick="setTagFilter('Highprotein', this)">💪 Highprotein</button>
+        <button class="tag" onclick="setTagFilter('Fitness', this)">🏋 Fitness</button>
+        <button class="tag" onclick="setTagFilter('Schnell', this)">⚡ Schnell</button>
+        <button class="tag" onclick="setTagFilter('Meal Prep', this)">❄️ Meal Prep</button>
+        <button class="tag" onclick="setTagFilter('Scharf', this)">🌶️ Scharf</button>
+      </div>
+    </div>
   </div>
 
   <div class="stats" id="statsBar">Lade Gerichte…</div>
@@ -482,16 +528,32 @@
         <div class="fg">
           <label>Kategorie</label>
           <select id="fCategory">
-            <option>Salat</option><option>Pasta</option><option>Fleisch</option>
-            <option>Vegetarisch</option><option>Vegan</option><option>Frühstück</option>
-            <option>Suppe</option><option>Snack</option><option>Dessert</option>
-            <option>Backen</option><option>Sonstiges</option>
+            <option>Gericht</option>
+            <option>Salat</option>
+            <option>Wrap & Bowl</option>
+            <option>Beilage</option>
+            <option>Sauce & Dip</option>
+            <option>Suppe</option>
           </select>
         </div>
       </div>
       <div class="fg">
         <label>Name des Gerichts *</label>
         <input type="text" id="fName" placeholder="z.B. Burrata mit Rucola">
+      </div>
+      <div class="fg">
+        <label>Tags</label>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;padding:0.5rem 0">
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Herzhaft"> 🥩 Herzhaft</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Süß"> 🍰 Süß</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Vegetarisch"> 🥦 Vegetarisch</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Vegan"> 🌱 Vegan</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Highprotein"> 💪 Highprotein</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Fitness"> 🏋 Fitness</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Schnell"> ⚡ Schnell</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Meal Prep"> ❄️ Meal Prep</label>
+          <label class="tag-check"><input type="checkbox" name="ftag" value="Scharf"> 🌶️ Scharf</label>
+        </div>
       </div>
       <div class="fg">
         <label>Kurzbeschreibung</label>
@@ -545,7 +607,11 @@
   const SUPABASE_URL = 'https://tlclufnnahgcwhmogkld.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsY2x1Zm5uYWhnY3dobW9na2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzY2NDQsImV4cCI6MjA4OTUxMjY0NH0.Bv6isYYeP5DbuEcKff6OUD4S9OsT0uxmRgIDsfRVXww';
 
-  let sbClient, recipes = [], currentFilter = 'Alle', editingId = null;
+  let sbClient, recipes = [], currentCat = 'Alle', currentTag = null, editingId = null;
+
+  function tagClass(tag) {
+    return 't-' + tag.toLowerCase().replace(/\s+/g, '-').replace(/ü/g,'ü');
+  }
 
   function init() {
     if (SUPABASE_URL.includes('DEINE') || SUPABASE_ANON_KEY.includes('DEIN_')) {
@@ -612,19 +678,32 @@
     renderCards();
   }
 
-  function setFilter(f, el) {
-    currentFilter = f;
-    document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+  function setCatFilter(f, el) {
+    currentCat = f;
+    document.querySelectorAll('#filterCats .tag').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
+    renderCards();
+  }
+
+  function setTagFilter(t, el) {
+    if (currentTag === t) {
+      currentTag = null;
+      el.classList.remove('active');
+    } else {
+      currentTag = t;
+      document.querySelectorAll('#filterTags .tag').forEach(x => x.classList.remove('active'));
+      el.classList.add('active');
+    }
     renderCards();
   }
 
   function renderCards() {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const filtered = recipes.filter(r => {
-      const mf = currentFilter === 'Alle' || r.category === currentFilter;
+      const mf = currentCat === 'Alle' || r.category === currentCat;
+      const mt = !currentTag || (Array.isArray(r.tags) && r.tags.includes(currentTag));
       const ms = !q || r.name.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q);
-      return mf && ms;
+      return mf && mt && ms;
     });
 
     document.getElementById('statsBar').textContent = `${filtered.length} von ${recipes.length} Rezepten`;
@@ -649,6 +728,7 @@
             ${r.kcal ? `<span class="badge b-kcal">🔥 ${r.kcal} kcal</span>` : ''}
             ${r.protein ? `<span class="badge b-prot">💪 ${r.protein}g</span>` : ''}
           </div>
+          ${Array.isArray(r.tags) && r.tags.length ? `<div class="card-tags">${r.tags.map(t => `<span class="tag-chip ${tagClass(t)}">${esc(t)}</span>`).join('')}</div>` : ''}
           ${r.description ? `<div class="card-desc">${esc(r.description)}</div>` : ''}
           <div class="card-footer">
             <div class="card-actions">
@@ -687,6 +767,7 @@
           ${r.category ? `<span class="badge b-cat">${esc(r.category)}</span>` : ''}
           ${r.time_minutes ? `<span class="badge b-time">⏱ ${esc(r.time_minutes)} Min</span>` : ''}
           ${r.portions ? `<span class="badge b-kcal">👥 ${esc(r.portions)} Portionen</span>` : ''}
+          ${Array.isArray(r.tags) ? r.tags.map(t => `<span class="tag-chip ${tagClass(t)}">${esc(t)}</span>`).join('') : ''}
         </div>
         ${r.description ? `<div class="dsec"><h3>Beschreibung</h3><p>${esc(r.description)}</p></div>` : ''}
         ${ings.length ? `<div class="dsec"><h3>Zutaten</h3><ul>${ings.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
@@ -735,6 +816,10 @@
     document.getElementById('fFat').value = r.fat || '';
     document.getElementById('fSource').value = r.source_url || '';
     document.getElementById('fSourceLabel').value = r.source_label || '';
+    const activeTags = Array.isArray(r.tags) ? r.tags : [];
+    document.querySelectorAll('input[name="ftag"]').forEach(cb => {
+      cb.checked = activeTags.includes(cb.value);
+    });
     openOverlay('formOverlay');
   }
 
@@ -742,6 +827,7 @@
     ['fId','fEmoji','fName','fDesc','fIngredients','fInstructions',
      'fTime','fPortions','fKcal','fProtein','fCarbs','fFat','fSource','fSourceLabel']
       .forEach(id => { document.getElementById(id).value = ''; });
+    document.querySelectorAll('input[name="ftag"]').forEach(cb => cb.checked = false);
   }
 
   async function saveRecipe() {
@@ -753,6 +839,7 @@
       emoji: document.getElementById('fEmoji').value || '🍽️',
       name,
       category: document.getElementById('fCategory').value,
+      tags: [...document.querySelectorAll('input[name="ftag"]:checked')].map(el => el.value),
       description: document.getElementById('fDesc').value,
       ingredients: document.getElementById('fIngredients').value.split('\n').map(l=>l.trim()).filter(Boolean),
       instructions: document.getElementById('fInstructions').value,
