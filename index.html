@@ -930,13 +930,13 @@
     ings.forEach(ing => {
       const p = _parseIng(ing);
       const key = p.norm + '|' + (p.unit || '');
+      // Display name = normalized base name (no prep adjectives), each word capitalized
+      const displayName = p.norm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       if (groups.has(key)) {
         const g = groups.get(key);
         if (p.qty !== null && g.qty !== null) g.qty += p.qty;
-        // keep the more descriptive display name
-        if (p.name.length > g.name.length) g.name = p.name;
       } else {
-        groups.set(key, { qty: p.qty, unit: p.unit, name: p.name });
+        groups.set(key, { qty: p.qty, unit: p.unit, name: displayName });
       }
     });
     return Array.from(groups.values()).map(g =>
