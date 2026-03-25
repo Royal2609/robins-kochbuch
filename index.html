@@ -862,6 +862,7 @@
     'reif','reife','reifen',
     'tiefgekühlt','tiefgekühlte','tiefgekühlten',
     'nach','belieben','geschmack','bedarf','wunsch',
+    'etwas','wenig','viel','mehr','etwas','genug','optional',
   ]);
 
   const _UNITS = {
@@ -926,22 +927,59 @@
   }
 
   function aggregateIngredients(ings) {
-    const groups = new Map();
-    ings.forEach(ing => {
+    // 1. Split "A und B" compounds (only when no leading number, to keep "400g X und Y" intact)
+    const expanded = ings.flatMap(ing => {
+      if (/^[\d½¼¾⅓⅔]/.test(ing.trim())) return [ing];
+      const parts = ing.split(/\s+(?:und|&)\s+/i);
+      return parts.length > 1 ? parts.map(p => p.trim()).filter(Boolean) : [ing];
+    });
+
+    // 2. Parse and group by norm + unit
+    const byKey = new Map();
+    expanded.forEach(ing => {
       const p = _parseIng(ing);
+      if (!p.norm) return;
       const key = p.norm + '|' + (p.unit || '');
-      // Display name = normalized base name (no prep adjectives), each word capitalized
       const displayName = p.norm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      if (groups.has(key)) {
-        const g = groups.get(key);
+      if (byKey.has(key)) {
+        const g = byKey.get(key);
         if (p.qty !== null && g.qty !== null) g.qty += p.qty;
       } else {
-        groups.set(key, { qty: p.qty, unit: p.unit, name: displayName });
+        byKey.set(key, { qty: p.qty, unit: p.unit, name: displayName, norm: p.norm });
       }
     });
-    return Array.from(groups.values()).map(g =>
-      (_fmtQty(g.qty) + (g.unit ? g.unit+' ' : '') + g.name).trim()
-    );
+
+    // 3. Merge same ingredient across different units
+    // If any entry has no unit + no qty (pantry staple like "Salz"), that one wins
+    const byNorm = new Map();
+    for (const g of byKey.values()) {
+      if (!byNorm.has(g.norm)) byNorm.set(g.norm, []);
+      byNorm.get(g.norm).push(g);
+    }
+
+    const result = [];
+    byNorm.forEach(entries => {
+      if (entries.length === 1) { result.push(entries[0]); return; }
+      const noUnit = entries.find(e => !e.unit && e.qty === null);
+      if (noUnit) {
+        result.push(noUnit); // pantry staple form → show once without qty
+      } else {
+        // different units: group + sum per unit
+        const unitMap = new Map();
+        entries.forEach(e => {
+          const uk = e.unit || '';
+          if (unitMap.has(uk)) {
+            const g = unitMap.get(uk);
+            if (e.qty !== null && g.qty !== null) g.qty += e.qty;
+          } else {
+            unitMap.set(uk, { ...e });
+          }
+        });
+        result.push(...unitMap.values());
+      }
+    });
+
+    return result.map(g => (_fmtQty(g.qty) + (g.unit ? g.unit+' ' : '') + g.name).trim());
   }
 
   // ── Einkaufsliste ────────────────────────────────────────────────────
