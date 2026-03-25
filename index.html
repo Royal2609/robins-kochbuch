@@ -465,6 +465,76 @@
     .portion-counter button:disabled { opacity: 0.35; cursor: not-allowed; background: var(--brand); }
     .portion-num { font-weight: 700; color: var(--brand); min-width: 1.2rem; text-align: center; font-size: 0.9rem; }
     .portion-label { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── Wochenplan ── */
+    .wp-modal {
+      background: var(--surface); border-radius: 1.25rem;
+      width: 100%; max-width: 900px; box-shadow: var(--shadow-lg);
+      overflow: hidden; display: flex; flex-direction: column;
+      max-height: calc(100vh - 4rem);
+    }
+    .wp-body { overflow-y: auto; flex: 1; }
+    .wp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem; padding: 1.25rem;
+    }
+    .wp-card {
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+      cursor: pointer; border: 1.5px solid transparent;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .wp-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--brand-light); }
+    .wp-card-img { width: 100%; height: 130px; object-fit: cover; display: block; }
+    .wp-card-emoji { height: 100px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--brand-xlight), #e8d8c4); font-size: 2.8rem; }
+    .wp-card-body { padding: 0.7rem 0.85rem; }
+    .wp-card-name { font-family: 'Lora', serif; font-size: 0.9rem; font-weight: 700;
+      color: var(--text); margin-bottom: 0.35rem; line-height: 1.3; }
+    .wp-card-meta { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .wp-card-footer { display: flex; justify-content: flex-end; padding: 0.5rem 0.85rem;
+      border-top: 1px solid var(--border); }
+    .wp-card-remove { background: #fdf0ee; color: #b94040; border: none;
+      border-radius: 0.4rem; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      font-weight: 600; cursor: pointer; font-family: inherit; }
+    .wp-card-remove:hover { background: #f9ddd9; }
+    .btn-plan { background: var(--brand-xlight); color: var(--brand-dark); }
+    .btn-plan:hover { background: #e0cdb8; }
+    .btn-plan-active { background: var(--brand); color: white; }
+    .btn-plan-active:hover { background: var(--brand-dark); }
+
+    /* Einkaufsliste — Pro-Rezept-Bereich */
+    .wp-shop-recipe-block { margin-bottom: 1.75rem; }
+    .wp-shop-recipe-title {
+      font-family: 'Lora', serif; font-size: 1rem; font-weight: 700;
+      color: var(--brand-dark); margin-bottom: 0.6rem;
+      padding-bottom: 0.35rem; border-bottom: 2px solid var(--brand-xlight);
+    }
+    .wp-shop-sub {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--muted); margin: 0.5rem 0 0.25rem;
+    }
+    .wp-shop-ing-list { margin: 0; padding-left: 1.2rem; }
+    .wp-shop-ing-list li { font-size: 0.88rem; color: #4a3728; padding: 0.15rem 0; line-height: 1.4; }
+    .wp-shop-steps { margin: 0; padding-left: 1.4rem; }
+    .wp-shop-steps li { font-size: 0.85rem; color: #4a3728; padding: 0.2rem 0; line-height: 1.5; }
+    .wp-shop-divider {
+      font-size: 0.9rem; font-weight: 700; color: var(--brand);
+      border-top: 2px solid var(--brand); border-bottom: 1px solid var(--border);
+      padding: 0.6rem 0; margin: 1rem 0 0.75rem;
+    }
+    .wp-shop-item { display: flex; align-items: flex-start; gap: 0.55rem;
+      padding: 0.22rem 0; font-size: 0.88rem; color: #4a3728; }
+    .wp-shop-item input[type=checkbox] { margin-top: 0.25rem; accent-color: var(--brand); flex-shrink: 0; }
+    .wp-shop-item label { cursor: pointer; line-height: 1.4; }
+    .wp-shop-item.checked label { text-decoration: line-through; color: var(--muted); }
+
+    @media print {
+      body > *:not(#wpShopOverlay) { display: none !important; }
+      #wpShopOverlay { display: block !important; position: static; background: none; }
+      .modal-head .btn-x, .modal-foot { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -494,6 +564,7 @@
     <div class="header-title">
       🍽️ Robins Kochbuch
     </div>
+    <button class="btn-logout" id="wpHeaderBtn" onclick="openWochenplan()" style="margin-right:0.4rem">📅 Plan</button>
     <button class="btn-logout" onclick="doLogout()">Abmelden</button>
   </header>
 
@@ -623,6 +694,41 @@
   <div class="detail-modal" id="viewContent"></div>
 </div>
 
+<!-- Wochenplan Overlay -->
+<div class="overlay" id="wpOverlay">
+  <div class="wp-modal">
+    <div class="modal-head">
+      <h2>📅 Mein Wochenplan</h2>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <button class="btn-secondary btn-sm" onclick="openShoppingList()">🛒 Einkaufsliste</button>
+        <button class="btn-secondary btn-sm" onclick="clearWochenplan()">🗑 Leeren</button>
+        <button class="btn-x" onclick="closeOverlay('wpOverlay')">×</button>
+      </div>
+    </div>
+    <div class="wp-body">
+      <div id="wpStats" class="stats" style="padding:0.75rem 1.25rem 0"></div>
+      <div id="wpGrid" class="wp-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Einkaufsliste Overlay -->
+<div class="overlay" id="wpShopOverlay">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h2>🛒 Einkaufsliste</h2>
+      <button class="btn-x" onclick="closeOverlay('wpShopOverlay')">×</button>
+    </div>
+    <div class="modal-body" style="padding:1rem 1.25rem;overflow-y:auto;max-height:calc(100vh - 14rem)">
+      <div id="wpShopContent"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-secondary" onclick="closeOverlay('wpShopOverlay')">Schließen</button>
+      <button class="btn-primary" onclick="window.print()">🖨️ Drucken</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -632,9 +738,159 @@
 
   let sbClient, recipes = [], currentCat = 'Alle', currentTag = null, editingId = null;
   let _vr = null, _vp = 1;
+  const WP_KEY = 'wochenplan_v1';
+  let wochenplan = [];
 
   function tagClass(tag) {
     return 't-' + tag.toLowerCase().replace(/\s+/g, '-').replace(/ü/g,'ü');
+  }
+
+  // ── Wochenplan ──────────────────────────────────────────────────────
+  function wpLoad() {
+    try { wochenplan = JSON.parse(localStorage.getItem(WP_KEY)) || []; }
+    catch(e) { wochenplan = []; }
+  }
+
+  function wpSave() {
+    localStorage.setItem(WP_KEY, JSON.stringify(wochenplan));
+  }
+
+  function wpHas(id) { return wochenplan.includes(id); }
+
+  function wpToggle(id) {
+    wpLoad();
+    if (wpHas(id)) {
+      wochenplan = wochenplan.filter(x => x !== id);
+      showToast('Aus dem Plan entfernt', '');
+    } else {
+      wochenplan.push(id);
+      showToast('Zum Wochenplan hinzugefügt ✓', 'success');
+    }
+    wpSave();
+    updateWpButtons();
+    updateWpHeaderBtn();
+  }
+
+  function updateWpButtons() {
+    document.querySelectorAll('[data-wp-id]').forEach(btn => {
+      const id = btn.dataset.wpId;
+      btn.classList.toggle('btn-plan-active', wpHas(id));
+      btn.classList.toggle('btn-plan', !wpHas(id));
+    });
+  }
+
+  function updateWpHeaderBtn() {
+    const btn = document.getElementById('wpHeaderBtn');
+    if (!btn) return;
+    btn.textContent = wochenplan.length > 0 ? `📅 Plan (${wochenplan.length})` : '📅 Plan';
+  }
+
+  function openWochenplan() {
+    wpLoad();
+    renderWochenplan();
+    openOverlay('wpOverlay');
+  }
+
+  function renderWochenplan() {
+    const planned = recipes.filter(r => wochenplan.includes(r.id));
+    document.getElementById('wpStats').textContent =
+      planned.length === 0 ? '' : `${planned.length} Rezept${planned.length !== 1 ? 'e' : ''} eingeplant`;
+
+    if (planned.length === 0) {
+      document.getElementById('wpGrid').innerHTML =
+        `<div class="empty" style="grid-column:1/-1">
+           <div class="icon">📅</div>
+           <p>Noch keine Rezepte eingeplant.</p>
+           <p style="font-size:0.85rem;margin-top:0.4rem;color:var(--muted)">
+             Nutze das 📅-Symbol auf den Rezeptkarten um Rezepte hinzuzufügen.
+           </p>
+         </div>`;
+      return;
+    }
+
+    document.getElementById('wpGrid').innerHTML = planned.map(r => `
+      <div class="wp-card" onclick="openView('${r.id}')">
+        ${r.image_url
+          ? `<img class="wp-card-img" src="${esc(r.image_url)}" alt="${esc(r.name)}" loading="lazy">`
+          : `<div class="wp-card-emoji">${r.emoji || '🍽️'}</div>`}
+        <div class="wp-card-body">
+          <div class="wp-card-name">${esc(r.name)}</div>
+          <div class="wp-card-meta">
+            ${[r.category, r.time_minutes ? `⏱ ${esc(String(r.time_minutes))} Min` : '', r.kcal ? `🔥 ${r.kcal} kcal` : ''].filter(Boolean).join(' · ')}
+          </div>
+        </div>
+        <div class="wp-card-footer">
+          <button class="wp-card-remove" onclick="event.stopPropagation();wpToggle('${r.id}');renderWochenplan()">
+            Entfernen
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  function clearWochenplan() {
+    if (!confirm('Wochenplan wirklich leeren?')) return;
+    wochenplan = [];
+    wpSave();
+    renderWochenplan();
+    updateWpHeaderBtn();
+    updateWpButtons();
+    showToast('Wochenplan geleert', '');
+  }
+
+  // ── Einkaufsliste ────────────────────────────────────────────────────
+  function openShoppingList() {
+    renderShoppingList();
+    openOverlay('wpShopOverlay');
+  }
+
+  function renderShoppingList() {
+    wpLoad();
+    const planned = recipes.filter(r => wochenplan.includes(r.id));
+    const container = document.getElementById('wpShopContent');
+
+    if (planned.length === 0) {
+      container.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">Noch keine Rezepte eingeplant.</p>';
+      return;
+    }
+
+    let uid = 0;
+
+    const perRecipeHtml = planned.map(r => {
+      const ings = Array.isArray(r.ingredients) ? r.ingredients : [];
+      const steps = r.instructions ? r.instructions.split('\n\n').filter(Boolean) : [];
+      return `
+        <div class="wp-shop-recipe-block">
+          <div class="wp-shop-recipe-title">${r.emoji || '🍽️'} ${esc(r.name)}</div>
+          ${ings.length ? `
+            <div class="wp-shop-sub">Zutaten</div>
+            <ul class="wp-shop-ing-list">
+              ${ings.filter(i => !i.startsWith('---')).map(i => `<li>${esc(i)}</li>`).join('')}
+            </ul>` : ''}
+          ${steps.length ? `
+            <div class="wp-shop-sub">Zubereitung</div>
+            <ol class="wp-shop-steps">
+              ${steps.map(s => `<li>${esc(s)}</li>`).join('')}
+            </ol>` : ''}
+        </div>`;
+    }).join('');
+
+    const allIngs = planned.flatMap(r =>
+      (Array.isArray(r.ingredients) ? r.ingredients : []).filter(i => !i.startsWith('---'))
+    );
+
+    const shopListHtml = allIngs.map(ing => {
+      const id = `wsi${uid++}`;
+      return `<div class="wp-shop-item" id="row-${id}">
+        <input type="checkbox" id="${id}"
+          onchange="document.getElementById('row-${id}').classList.toggle('checked',this.checked)">
+        <label for="${id}">${esc(ing)}</label>
+      </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      ${perRecipeHtml}
+      <div class="wp-shop-divider">🛒 Einkaufsliste</div>
+      <div class="wp-shop-flat">${shopListHtml}</div>`;
   }
 
   function init() {
@@ -659,6 +915,8 @@
   function showApp(user) {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
+    wpLoad();
+    updateWpHeaderBtn();
     loadRecipes();
   }
 
@@ -756,6 +1014,10 @@
           ${r.description ? `<div class="card-desc">${esc(r.description)}</div>` : ''}
           <div class="card-footer">
             <div class="card-actions">
+              <button class="btn-sm ${wpHas(r.id) ? 'btn-plan-active' : 'btn-plan'}"
+                data-wp-id="${r.id}"
+                onclick="event.stopPropagation();wpToggle('${r.id}')"
+                title="${wpHas(r.id) ? 'Aus Plan entfernen' : 'Zum Plan hinzufügen'}">📅</button>
               <button class="btn-sm btn-edit" onclick="event.stopPropagation();openEdit('${r.id}')">✏️ Bearbeiten</button>
               <button class="btn-sm btn-del"  onclick="event.stopPropagation();deleteRecipe('${r.id}', event)">🗑</button>
             </div>
