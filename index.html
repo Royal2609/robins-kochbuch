@@ -442,6 +442,29 @@
     .tag-check:has(input:checked) {
       background: var(--brand); border-color: var(--brand); color: white;
     }
+
+    /* Portionsrechner */
+    .portion-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .portion-row h3 { margin-bottom: 0 !important; }
+    .portion-counter {
+      display: flex; align-items: center; gap: 0.45rem;
+      background: var(--surface-warm); border: 1.5px solid var(--border);
+      border-radius: 2rem; padding: 0.2rem 0.55rem;
+    }
+    .portion-counter button {
+      width: 1.45rem; height: 1.45rem; border-radius: 50%;
+      background: var(--brand); color: white; border: none;
+      font-size: 1rem; font-weight: 700; cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .portion-counter button:hover { background: var(--brand-dark); }
+    .portion-counter button:disabled { opacity: 0.35; cursor: not-allowed; background: var(--brand); }
+    .portion-num { font-weight: 700; color: var(--brand); min-width: 1.2rem; text-align: center; font-size: 0.9rem; }
+    .portion-label { font-size: 0.72rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -608,6 +631,7 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsY2x1Zm5uYWhnY3dobW9na2xkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzY2NDQsImV4cCI6MjA4OTUxMjY0NH0.Bv6isYYeP5DbuEcKff6OUD4S9OsT0uxmRgIDsfRVXww';
 
   let sbClient, recipes = [], currentCat = 'Alle', currentTag = null, editingId = null;
+  let _vr = null, _vp = 1;
 
   function tagClass(tag) {
     return 't-' + tag.toLowerCase().replace(/\s+/g, '-').replace(/ü/g,'ü');
@@ -744,6 +768,8 @@
   function openView(id) {
     const r = recipes.find(x => x.id === id);
     if (!r) return;
+    _vr = r;
+    _vp = parseInt(r.portions) || 1;
     const ings = Array.isArray(r.ingredients) ? r.ingredients : [];
     const nutr = r.kcal || r.protein || r.carbs || r.fat;
 
@@ -766,17 +792,29 @@
         <div class="detail-badges">
           ${r.category ? `<span class="badge b-cat">${esc(r.category)}</span>` : ''}
           ${r.time_minutes ? `<span class="badge b-time">⏱ ${esc(r.time_minutes)} Min</span>` : ''}
-          ${r.portions ? `<span class="badge b-kcal">👥 ${esc(r.portions)} Portionen</span>` : ''}
+          ${r.portions ? `<span class="badge b-kcal">👥 <span id="portionBadge">${esc(r.portions)}</span> Portionen</span>` : ''}
           ${Array.isArray(r.tags) ? r.tags.map(t => `<span class="tag-chip ${tagClass(t)}">${esc(t)}</span>`).join('') : ''}
         </div>
         ${r.description ? `<div class="dsec"><h3>Beschreibung</h3><p>${esc(r.description)}</p></div>` : ''}
-        ${ings.length ? `<div class="dsec"><h3>Zutaten</h3><ul>${ings.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
+        ${ings.length ? `
+        <div class="dsec">
+          <div class="portion-row">
+            <h3>Zutaten</h3>
+            <div class="portion-counter">
+              <button onclick="changePortions(-1)" id="portionMinus">−</button>
+              <span class="portion-num" id="portionNum">${_vp}</span>
+              <span class="portion-label">Port.</span>
+              <button onclick="changePortions(1)">+</button>
+            </div>
+          </div>
+          <ul id="detailIngList">${scaleIngList(ings, 1)}</ul>
+        </div>` : ''}
         ${r.instructions ? `<div class="dsec"><h3>Zubereitung</h3><p>${esc(r.instructions).replace(/\n\n/g, '</p><p style="margin-top:0.6rem">').replace(/\n/g, '<br>')}</p></div>` : ''}
-        ${nutr ? `<div class="dsec"><h3>Nährwerte pro Portion</h3><div class="nutr-grid">
-          ${r.kcal    ? `<div class="nutr-item"><div class="val">${r.kcal}</div><div class="lbl">kcal</div></div>` : ''}
-          ${r.protein ? `<div class="nutr-item"><div class="val">${r.protein}g</div><div class="lbl">Protein</div></div>` : ''}
-          ${r.carbs   ? `<div class="nutr-item"><div class="val">${r.carbs}g</div><div class="lbl">Kohlenhydrate</div></div>` : ''}
-          ${r.fat     ? `<div class="nutr-item"><div class="val">${r.fat}g</div><div class="lbl">Fett</div></div>` : ''}
+        ${nutr ? `<div class="dsec"><h3>Nährwerte <span id="nutrLabel">pro Portion</span></h3><div class="nutr-grid">
+          ${r.kcal    ? `<div class="nutr-item"><div class="val" id="nutrKcal">${r.kcal}</div><div class="lbl">kcal</div></div>` : ''}
+          ${r.protein ? `<div class="nutr-item"><div class="val" id="nutrProtein">${r.protein}g</div><div class="lbl">Protein</div></div>` : ''}
+          ${r.carbs   ? `<div class="nutr-item"><div class="val" id="nutrCarbs">${r.carbs}g</div><div class="lbl">Kohlenhydrate</div></div>` : ''}
+          ${r.fat     ? `<div class="nutr-item"><div class="val" id="nutrFat">${r.fat}g</div><div class="lbl">Fett</div></div>` : ''}
         </div></div>` : ''}
         ${r.source_url ? `<div class="dsrc">Quelle: <a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.source_label || r.source_url)}</a></div>` : ''}
       </div>
@@ -786,6 +824,44 @@
       </div>`;
 
     openOverlay('viewOverlay');
+  }
+
+  function changePortions(delta) {
+    _vp = Math.max(1, _vp + delta);
+    const base = parseInt(_vr.portions) || 1;
+    const factor = _vp / base;
+
+    document.getElementById('portionNum').textContent = _vp;
+    const badge = document.getElementById('portionBadge');
+    if (badge) badge.textContent = _vp;
+    document.getElementById('portionMinus').disabled = _vp <= 1;
+
+    const ings = Array.isArray(_vr.ingredients) ? _vr.ingredients : [];
+    document.getElementById('detailIngList').innerHTML = scaleIngList(ings, factor);
+
+    const r1 = n => Math.round(n * 10) / 10;
+    const el = id => document.getElementById(id);
+    if (_vr.kcal    && el('nutrKcal'))    el('nutrKcal').textContent    = Math.round(_vr.kcal * factor);
+    if (_vr.protein && el('nutrProtein')) el('nutrProtein').textContent = r1(_vr.protein * factor) + 'g';
+    if (_vr.carbs   && el('nutrCarbs'))   el('nutrCarbs').textContent   = r1(_vr.carbs   * factor) + 'g';
+    if (_vr.fat     && el('nutrFat'))     el('nutrFat').textContent     = r1(_vr.fat     * factor) + 'g';
+
+    if (el('nutrLabel')) el('nutrLabel').textContent = factor === 1 ? 'pro Portion' : `(${_vp} Port.)`;
+  }
+
+  function scaleIngList(ings, factor) {
+    return ings.map(i => `<li>${esc(scaleIngredient(i, factor))}</li>`).join('');
+  }
+
+  function scaleIngredient(str, factor) {
+    if (factor === 1) return str;
+    if (/^---/.test(str.trim())) return str;
+    return str.replace(/\d+(?:[.,]\d+)?/g, m => {
+      const n = parseFloat(m.replace(',', '.')) * factor;
+      if (Number.isInteger(n)) return String(n);
+      const rounded = Math.round(n * 10) / 10;
+      return String(rounded).replace('.', ',');
+    });
   }
 
   function openAdd() {
